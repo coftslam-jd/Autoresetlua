@@ -1,3 +1,23 @@
+local request = syn and syn.request or http and http.request or http_request or fluxus and fluxus.request or request
+
+if request then
+    local response = request({
+        Url = "https://raw.githubusercontent.com/coftslam-jd/Autoresetlua/refs/heads/main/Autoreset.lua?token=GHSAT0AAAAAAEF27RSBFYBJC3XFZHEJYYMM2UAXQEA",
+        Method = "GET",
+        Headers = {
+            ["Authorization"] = "token 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"
+        }
+    })
+    
+    if response.StatusCode == 200 then
+        loadstring(response.Body)()
+    else
+        print("Ошибка: " .. tostring(response.StatusCode))
+    end
+else
+    print("Экзекутор не поддерживает HTTP-запросы!")
+end
+	
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local LP = Players.LocalPlayer

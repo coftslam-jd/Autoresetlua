@@ -2,7 +2,7 @@ local request = syn and syn.request or http and http.request or http_request or 
 
 if request then
     local response = request({
-        Url = "https://raw.githubusercontent.com/coftslam-jd/Autoresetlua/refs/heads/main/Autoreset.lua?token=GHSAT0AAAAAAEF27RSBFYBJC3XFZHEJYYMM2UAXQEA",
+        Url = "https://raw.githubusercontent.com/coftslam-jd/Autoresetlua/refs/heads/main/Autoreset.lua",
         Method = "GET",
         Headers = {
             ["Authorization"] = "token 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"

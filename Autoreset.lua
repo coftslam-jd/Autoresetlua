@@ -1,5 +1,7 @@
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
+local UIS = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
 local LP = Players.LocalPlayer
 local U = function(...) local t,s={...},"" for i=1,#t do s=s..utf8.char(t[i]) end return s end
 local TR = 0.25
@@ -67,12 +69,9 @@ local function sideBtn(t, o)
 	fit(b) Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
 	return b
 end
-local btn1 = sideBtn(U(1088,1077,1089,1090,1072,1088,1090)
-	, 1)
-local btn2 = sideBtn(U(1089,1090,1072,1090,1080,1089,1090,1080,1082,1072)
-	, 2)
-local btn3 = sideBtn(U(1085,1072,1089,1090,1088,1086,1081,1082,1080)
-	, 3)
+local btn1 = sideBtn(U(1056,1077,1089,1077,1090), 1)
+local btn2 = sideBtn(U(1057,1090,1072,1090,1080,1089,1090,1080,1082,1072), 2)
+local btn3 = sideBtn(U(1053,1072,1089,1090,1088,1086,1081,1082,1080), 3)
 
 local content = Instance.new("Frame", main)
 content.Size = UDim2.new(1,-74,1,-46) content.Position = UDim2.new(0,69,0,40) content.BackgroundTransparency = 1
@@ -101,6 +100,77 @@ local function makePanel(o)
 	return f
 end
 
+-- переиспользуемый тумблер ВКЛ/ВЫКЛ
+local function makeToggle(p, label, o, getFn, setFn)
+	local row = Instance.new("Frame", p)
+	row.Size = UDim2.new(1,0,0,28) row.BackgroundTransparency = 1 row.LayoutOrder = o
+	local l = Instance.new("TextLabel", row)
+	l.BackgroundTransparency = 1 l.Size = UDim2.new(1,-54,1,0) l.Text = label
+	l.TextColor3 = Color3.fromRGB(210,210,210) l.Font = Enum.Font.Gotham l.TextXAlignment = Enum.TextXAlignment.Left fit(l)
+	local btn = Instance.new("TextButton", row)
+	btn.Size = UDim2.new(0,48,0,24) btn.Position = UDim2.new(1,-48,0.5,-12) btn.BackgroundTransparency = TR
+	btn.Font = Enum.Font.GothamBold btn.TextColor3 = Color3.new(1,1,1) fit(btn)
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+	local function refresh()
+		btn.Text = getFn() and U(1042,1050,1051) or U(1042,1067,1050,1051)
+		btn.BackgroundColor3 = getFn() and Color3.fromRGB(45,140,80) or Color3.fromRGB(90,45,45)
+	end
+	btn.MouseButton1Click:Connect(function() setFn(not getFn()) refresh() end)
+	refresh()
+end
+
+-- переиспользуемый слайдер + поле числа
+local function makeSlider(p, label, minV, maxV, default, o, onChange)
+	local row = Instance.new("Frame", p)
+	row.Size = UDim2.new(1,0,0,48) row.BackgroundTransparency = 1 row.LayoutOrder = o
+	local l = Instance.new("TextLabel", row)
+	l.BackgroundTransparency = 1 l.Size = UDim2.new(1,0,0,18) l.Text = label
+	l.TextColor3 = Color3.fromRGB(210,210,210) l.Font = Enum.Font.Gotham l.TextXAlignment = Enum.TextXAlignment.Left fit(l)
+	local track = Instance.new("TextButton", row)
+	track.Size = UDim2.new(1,-58,0,20) track.Position = UDim2.new(0,0,0,24)
+	track.BackgroundColor3 = Color3.fromRGB(40,34,44) track.BackgroundTransparency = TR track.Text = "" track.AutoButtonColor = false
+	Instance.new("UICorner", track).CornerRadius = UDim.new(0,6)
+	local fill = Instance.new("Frame", track)
+	fill.BackgroundColor3 = Color3.fromRGB(90,50,140) fill.BorderSizePixel = 0
+	Instance.new("UICorner", fill).CornerRadius = UDim.new(0,6)
+	local box = Instance.new("TextBox", row)
+	box.Size = UDim2.new(0,50,0,20) box.Position = UDim2.new(1,-50,0,24)
+	box.BackgroundColor3 = Color3.fromRGB(40,34,44) box.BackgroundTransparency = TR box.TextColor3 = Color3.new(1,1,1)
+	box.Font = Enum.Font.Gotham box.ClearTextOnFocus = false fit(box)
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0,6)
+
+	local value = default
+	local function setValue(v)
+		v = math.clamp(math.floor(v+0.5), minV, maxV)
+		value = v
+		fill.Size = UDim2.new((v-minV)/(maxV-minV), 0, 1, 0)
+		box.Text = tostring(v)
+		onChange(v)
+	end
+	setValue(default)
+
+	local dragging = false
+	local function fromPos(x)
+		local rel = (x - track.AbsolutePosition.X) / track.AbsoluteSize.X
+		setValue(minV + rel*(maxV-minV))
+	end
+	track.InputBegan:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			dragging = true fromPos(inp.Position.X)
+		end
+	end)
+	UIS.InputChanged:Connect(function(inp)
+		if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then fromPos(inp.Position.X) end
+	end)
+	UIS.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then dragging = false end
+	end)
+	box.FocusLost:Connect(function()
+		local n = tonumber(box.Text)
+		if n then setValue(n) else box.Text = tostring(value) end
+	end)
+end
+
 local statusLabel = Instance.new("TextLabel", content)
 statusLabel.BackgroundTransparency = 1 statusLabel.Size = UDim2.new(1,0,0,20)
 statusLabel.Text = U(1043,1086,1090,1086,1074) statusLabel.TextColor3 = Color3.fromRGB(220,220,220)
@@ -119,8 +189,7 @@ scroll.Size = UDim2.new(1,0,0,90) scroll.BackgroundColor3 = Color3.fromRGB(18,15
 scroll.ScrollBarThickness = 4 scroll.CanvasSize = UDim2.new(0,0,0,0) scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.LayoutOrder = 2
 Instance.new("UIListLayout", scroll).Padding = UDim.new(0,4)
-local resetsInput = makeInput(p1, U(1050,1086,1083,45,1074,1086,32,1088,1077,1089,1077,1090,1086,1074,32,40,1087,1091,1089,1090,1086,45,1073,1077,1089,1082,1086,1085,1077,1095,1085,1086,41)
-	, 3)
+local resetsInput = makeInput(p1, U(1050,1086,1083,45,1074,1086,32,1088,1077,1089,1077,1090,1086,1074,32,40,1087,1091,1089,1090,1086,61,1073,1077,1089,1082,46,41), 3)
 local startBtn = makeBtn(p1, U(1057,1058,1040,1056,1058), 4, Color3.fromRGB(45,140,80))
 
 local targetName = ""
@@ -147,70 +216,134 @@ statsWin.Visible = false statsWin.Active = true statsWin.Draggable = true
 Instance.new("UICorner", statsWin).CornerRadius = UDim.new(0,10)
 local statsScale = Instance.new("UIScale", statsWin)
 local swTitle = Instance.new("TextLabel", statsWin)
-swTitle.BackgroundTransparency = 1 swTitle.Size = UDim2.new(1,0,0,26) swTitle.Text = U(1089,1090,1072,1090,1080,1089,1090,1080,1082,1072)
+swTitle.BackgroundTransparency = 1 swTitle.Size = UDim2.new(1,0,0,26) swTitle.Text = U(1057,1090,1072,1090,1080,1089,1090,1080,1082,1072)
 swTitle.TextColor3 = Color3.new(1,1,1) swTitle.Font = Enum.Font.GothamBold fit(swTitle)
 local swTime = Instance.new("TextLabel", statsWin)
 swTime.BackgroundTransparency = 1 swTime.Position = UDim2.new(0,8,0,30) swTime.Size = UDim2.new(1,-16,0,20)
 swTime.TextColor3 = Color3.fromRGB(220,220,220) swTime.Font = Enum.Font.Gotham swTime.TextXAlignment = Enum.TextXAlignment.Left
 fit(swTime)
-local swResets = swTime:Clone() swResets.Parent = statsWin swResets.Position = UDim2.new(0,8,0,58)
-local swMoney = swTime:Clone() swMoney.Parent = statsWin swMoney.Position = UDim2.new(0,8,0,86)
+local swMoney = swTime:Clone() swMoney.Parent = statsWin swMoney.Position = UDim2.new(0,8,0,58)
 
 -- страница 2: статистика (управление)
 local p2 = makePanel(2)
 local swToggleBtn = makeBtn(p2, U(1054,1082,1085,1086,32,1089,1090,1072,1090,1080,1089,1090,1080,1082,1080), 1)
 swToggleBtn.MouseButton1Click:Connect(function() statsWin.Visible = not statsWin.Visible end)
-local swSizeRow = Instance.new("Frame", p2)
-swSizeRow.Size = UDim2.new(1,0,0,30) swSizeRow.BackgroundTransparency = 1 swSizeRow.LayoutOrder = 2
-local swMinus = Instance.new("TextButton", swSizeRow)
-swMinus.Size = UDim2.new(0,54,1,0) swMinus.BackgroundColor3 = Color3.fromRGB(40,34,44) swMinus.BackgroundTransparency = TR
-swMinus.Text = "-" swMinus.TextColor3 = Color3.new(1,1,1) swMinus.Font = Enum.Font.GothamBold fit(swMinus)
-Instance.new("UICorner", swMinus).CornerRadius = UDim.new(0,6)
-local swPlus = Instance.new("TextButton", swSizeRow)
-swPlus.Size = UDim2.new(0,54,1,0) swPlus.Position = UDim2.new(0,62,0,0)
-swPlus.BackgroundColor3 = Color3.fromRGB(40,34,44) swPlus.BackgroundTransparency = TR
-swPlus.Text = "+" swPlus.TextColor3 = Color3.new(1,1,1) swPlus.Font = Enum.Font.GothamBold fit(swPlus)
-Instance.new("UICorner", swPlus).CornerRadius = UDim.new(0,6)
-swMinus.MouseButton1Click:Connect(function() statsScale.Scale = math.clamp(statsScale.Scale-0.1,0.5,1.8) end)
-swPlus.MouseButton1Click:Connect(function() statsScale.Scale = math.clamp(statsScale.Scale+0.1,0.5,1.8) end)
+makeSlider(p2, U(1056,1072,1079,1084,1077,1088,32,1086,1082,1085,1072,32,1089,1090,1072,1090,58), 50, 180, 100, 2, function(v) statsScale.Scale = v/100 end)
 local resetStatsBtn = makeBtn(p2, U(1057,1073,1088,1086,1089,32,1089,1090,1072,1090,1080,1089,1090,1080,1082,1080), 3, Color3.fromRGB(90,45,45))
 local cTime = Instance.new("TextLabel", p2)
 cTime.BackgroundTransparency = 1 cTime.Size = UDim2.new(1,0,0,18) cTime.Text = "00:00:00"
 cTime.TextColor3 = Color3.fromRGB(200,200,200) cTime.Font = Enum.Font.Gotham cTime.TextXAlignment = Enum.TextXAlignment.Left
 cTime.LayoutOrder = 4 fit(cTime)
-local cResets = cTime:Clone() cResets.Parent = p2 cResets.LayoutOrder = 5
-local cMoney = cTime:Clone() cMoney.Parent = p2 cMoney.LayoutOrder = 6
+local cMoney = cTime:Clone() cMoney.Parent = p2 cMoney.LayoutOrder = 5
 
 -- страница 3: настройки
 local p3 = makePanel(2)
-local sizeLabel = Instance.new("TextLabel", p3)
-sizeLabel.BackgroundTransparency = 1 sizeLabel.Size = UDim2.new(1,0,0,20)
-sizeLabel.Text = U(1056,1072,1079,1084,1077,1088,58,32,49,48,48,37) sizeLabel.TextColor3 = Color3.fromRGB(210,210,210)
-sizeLabel.Font = Enum.Font.Gotham sizeLabel.TextXAlignment = Enum.TextXAlignment.Left sizeLabel.LayoutOrder = 1 fit(sizeLabel)
-local sizeRow = Instance.new("Frame", p3) sizeRow.Size = UDim2.new(1,0,0,30) sizeRow.BackgroundTransparency = 1 sizeRow.LayoutOrder = 2
-local mMinus = Instance.new("TextButton", sizeRow)
-mMinus.Size = UDim2.new(0,54,1,0) mMinus.BackgroundColor3 = Color3.fromRGB(40,34,44) mMinus.BackgroundTransparency = TR
-mMinus.Text = "-" mMinus.TextColor3 = Color3.new(1,1,1) mMinus.Font = Enum.Font.GothamBold fit(mMinus)
-Instance.new("UICorner", mMinus).CornerRadius = UDim.new(0,6)
-local mPlus = Instance.new("TextButton", sizeRow)
-mPlus.Size = UDim2.new(0,54,1,0) mPlus.Position = UDim2.new(0,62,0,0)
-mPlus.BackgroundColor3 = Color3.fromRGB(40,34,44) mPlus.BackgroundTransparency = TR
-mPlus.Text = "+" mPlus.TextColor3 = Color3.new(1,1,1) mPlus.Font = Enum.Font.GothamBold fit(mPlus)
-Instance.new("UICorner", mPlus).CornerRadius = UDim.new(0,6)
-local function setScale(v) scale.Scale = math.clamp(v,0.6,1.6) sizeLabel.Text = U(1056,1072,1079,1084,1077,1088,58,32)..math.floor(scale.Scale*100).."%" end
-mMinus.MouseButton1Click:Connect(function() setScale(scale.Scale-0.1) end)
-mPlus.MouseButton1Click:Connect(function() setScale(scale.Scale+0.1) end)
-local afkRow = Instance.new("Frame", p3) afkRow.Size = UDim2.new(1,0,0,28) afkRow.BackgroundTransparency = 1 afkRow.LayoutOrder = 3
-local afkLabel = Instance.new("TextLabel", afkRow)
-afkLabel.BackgroundTransparency = 1 afkLabel.Size = UDim2.new(1,-54,1,0) afkLabel.Text = U(1040,1085,1090,1080,45,1040,1060,1050)
-afkLabel.TextColor3 = Color3.fromRGB(210,210,210) afkLabel.Font = Enum.Font.Gotham afkLabel.TextXAlignment = Enum.TextXAlignment.Left fit(afkLabel)
-local afkBtn = Instance.new("TextButton", afkRow)
-afkBtn.Size = UDim2.new(0,48,0,24) afkBtn.Position = UDim2.new(1,-48,0.5,-12) afkBtn.BackgroundTransparency = TR
-afkBtn.Font = Enum.Font.GothamBold afkBtn.TextColor3 = Color3.new(1,1,1) fit(afkBtn)
-Instance.new("UICorner", afkBtn).CornerRadius = UDim.new(0,10)
-local function refreshAfk() afkBtn.Text = antiAfk and U(1042,1050,1051) or U(1042,1067,1050,1051) afkBtn.BackgroundColor3 = antiAfk and Color3.fromRGB(45,140,80) or Color3.fromRGB(90,45,45) end
-afkBtn.MouseButton1Click:Connect(function() antiAfk = not antiAfk refreshAfk() end)
-refreshAfk()
+makeSlider(p3, U(1056,1072,1079,1084,1077,1088,32,1084,1077,1085,1102,58), 60, 160, 100, 1, function(v) scale.Scale = v/100 end)
+makeToggle(p3, U(1040,1085,1090,1080,45,1040,1060,1050), 2, function() return antiAfk end, function(v) antiAfk = v end)
+
+local fpsBoost = false
+local origTechnology = nil
+local function applyFpsBoost(on)
+	fpsBoost = on
+	pcall(function()
+		local ugs = UserSettings():GetService("UserGameSettings")
+		ugs.SavedQualityLevel = on and Enum.SavedQualitySetting.QualityLevel1 or Enum.SavedQualitySetting.Automatic
+	end)
+	if on then
+		origTechnology = Lighting.Technology
+		pcall(function() Lighting.Technology = Enum.Technology.Compatibility end)
+	elseif origTechnology then
+		pcall(function() Lighting.Technology = origTechnology end)
+	end
+	Lighting.GlobalShadows = not on
+	for _, eff in ipairs(Lighting:GetChildren()) do
+		if eff:IsA("PostEffect") then eff.Enabled = not on end
+	end
+	local terrain = workspace:FindFirstChildOfClass("Terrain")
+	if terrain then pcall(function() terrain.WaterWaveSize = on and 0 or 0.15 end) end
+end
+makeToggle(p3, U(1041,1091,1089,1090,32,70,80,83), 3, function() return fpsBoost end, applyFpsBoost)
+
+local billboardBackup = {}
+local function setNameHidden(char, hidden)
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then hum.DisplayDistanceType = hidden and Enum.HumanoidDisplayDistanceType.None or Enum.HumanoidDisplayDistanceType.Viewer end
+	if hidden then
+		local list = {}
+		for _, bg in ipairs(char:GetDescendants()) do
+			if bg:IsA("BillboardGui") then
+				table.insert(list, {bg=bg, was=bg.Enabled})
+				bg.Enabled = false
+			end
+		end
+		billboardBackup[char] = list
+	else
+		local list = billboardBackup[char]
+		if list then
+			for _, e in ipairs(list) do if e.bg.Parent then e.bg.Enabled = e.was end end
+			billboardBackup[char] = nil
+		end
+	end
+end
+local hideNames = false
+local function applyHideNames(on)
+	hideNames = on
+	for _, pl in ipairs(Players:GetPlayers()) do if pl.Character then setNameHidden(pl.Character, on) end end
+end
+makeToggle(p3, U(1057,1082,1088,1099,1090,1100,32,1085,1080,1082,1080), 4, function() return hideNames end, applyHideNames)
+
+local skinBackup = {}
+local function setSkinHidden(char, hidden)
+	if hidden then
+		if skinBackup[char] then return end
+		local data = {removed={}, parts={}}
+		for _, inst in ipairs(char:GetChildren()) do
+			if inst:IsA("Shirt") or inst:IsA("Pants") or inst:IsA("ShirtGraphic") or inst:IsA("Accessory") then
+				table.insert(data.removed, inst)
+				inst.Parent = nil
+			end
+		end
+		for _, part in ipairs(char:GetDescendants()) do
+			if part:IsA("BasePart") then
+				table.insert(data.parts, {part=part, color=part.Color, material=part.Material})
+				part.Color = Color3.fromRGB(163,162,165)
+				part.Material = Enum.Material.SmoothPlastic
+			end
+		end
+		skinBackup[char] = data
+	else
+		local data = skinBackup[char]
+		if not data then return end
+		for _, inst in ipairs(data.removed) do if inst.Parent == nil then inst.Parent = char end end
+		for _, entry in ipairs(data.parts) do
+			if entry.part.Parent then entry.part.Color = entry.color entry.part.Material = entry.material end
+		end
+		skinBackup[char] = nil
+	end
+end
+local hideSkins = false
+local function applyHideSkins(on)
+	hideSkins = on
+	for _, pl in ipairs(Players:GetPlayers()) do if pl.Character then setSkinHidden(pl.Character, on) end end
+end
+makeToggle(p3, U(1057,1082,1088,1099,1090,1100,32,1089,1082,1080,1085,1099), 5, function() return hideSkins end, applyHideSkins)
+
+Players.PlayerAdded:Connect(function(pl)
+	pl.CharacterAdded:Connect(function(char)
+		task.wait(1)
+		if hideNames then setNameHidden(char, true) end
+		if hideSkins then setSkinHidden(char, true) end
+	end)
+end)
+LP.CharacterAdded:Connect(function(char)
+	task.wait(1)
+	if hideNames then setNameHidden(char, true) end
+	if hideSkins then setSkinHidden(char, true) end
+end)
+
+makeSlider(p3, U(1051,1080,1084,1080,1090,32,70,80,83), 5, 240, 60, 6, function(v)
+	pcall(function() setfpscap(v) end)
+end)
 
 local pages = {p1,p2,p3}
 local function show(p) for _,pg in ipairs(pages) do pg.Visible=false end p.Visible=true end
@@ -239,12 +372,12 @@ local function chain(char)
 	if not TP(targetName) then stop(U(1053,1077,32,1091,1076,1072,1083,1086,1089,1100,32,1090,1077,1083,1077,1087,1086,1088,1090,1080,1088,1086,1074,1072,1090,1100,1089,1103)) return end
 	task.wait(0.3)
 	if not running then return end
-	resetCount += 1
+	resetCount = resetCount + 1
 	Reset()
 end
 
 LP.CharacterAdded:Connect(function(char)
-	deaths += 1
+	deaths = deaths + 1
 	if not running or resetCount == 0 then return end
 	if target > 0 and resetCount >= target then stop(U(1043,1086,1090,1086,1074,1086,58,32,1074,1089,1077)) return end
 	task.spawn(function() chain(char) end)
@@ -285,10 +418,10 @@ task.spawn(function()
 	while true do
 		local t = "00:00:00"
 		if running then local e = os.clock()-startTime t = string.format("%02d:%02d:%02d", e//3600,(e%3600)//60,e%60) end
-		local rTxt = U(1057,1084,1077,1088,1090,1077,1081,58,32)..deaths..(target>0 and (" / "..target) or "")
-		local mTxt = U(1044,1077,1085,1100,1075,1080,58,32)..(resetCount*5000)
-		swTime.Text, swResets.Text, swMoney.Text = t, rTxt, mTxt
-		cTime.Text, cResets.Text, cMoney.Text = t, rTxt, mTxt
+		local mTxt = U(1044,1077,1085,1100,1075,1080,58,32)
+		mTxt = mTxt .. tostring(resetCount*5000)
+		swTime.Text, swMoney.Text = t, mTxt
+		cTime.Text, cMoney.Text = t, mTxt
 		task.wait(1)
 	end
 end)

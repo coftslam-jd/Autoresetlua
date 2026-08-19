@@ -223,6 +223,7 @@ swTime.BackgroundTransparency = 1 swTime.Position = UDim2.new(0,8,0,30) swTime.S
 swTime.TextColor3 = Color3.fromRGB(220,220,220) swTime.Font = Enum.Font.Gotham swTime.TextXAlignment = Enum.TextXAlignment.Left
 fit(swTime)
 local swMoney = swTime:Clone() swMoney.Parent = statsWin swMoney.Position = UDim2.new(0,8,0,58)
+local swResets = swTime:Clone() swResets.Parent = statsWin swResets.Position = UDim2.new(0,8,0,86)
 
 -- страница 2: статистика (управление)
 local p2 = makePanel(2)
@@ -235,6 +236,7 @@ cTime.BackgroundTransparency = 1 cTime.Size = UDim2.new(1,0,0,18) cTime.Text = "
 cTime.TextColor3 = Color3.fromRGB(200,200,200) cTime.Font = Enum.Font.Gotham cTime.TextXAlignment = Enum.TextXAlignment.Left
 cTime.LayoutOrder = 4 fit(cTime)
 local cMoney = cTime:Clone() cMoney.Parent = p2 cMoney.LayoutOrder = 5
+local cResets = cTime:Clone() cResets.Parent = p2 cResets.LayoutOrder = 6
 
 -- страница 3: настройки
 local p3 = makePanel(2)
@@ -414,14 +416,27 @@ startBtn.MouseButton1Click:Connect(function()
 	Reset()
 end)
 
+local function formatK(n)
+	local k = math.floor(n/1000)
+	local s = tostring(k)
+	local out = ""
+	local len = #s
+	for i = 1, len do
+		out = out .. s:sub(i,i)
+		local remain = len - i
+		if remain > 0 and remain % 3 == 0 then out = out .. "." end
+	end
+	return out .. U(1082)
+end
+
 task.spawn(function()
 	while true do
 		local t = "00:00:00"
 		if running then local e = os.clock()-startTime t = string.format("%02d:%02d:%02d", e//3600,(e%3600)//60,e%60) end
-		local mTxt = U(1044,1077,1085,1100,1075,1080,58,32)
-		mTxt = mTxt .. tostring(resetCount*5000)
-		swTime.Text, swMoney.Text = t, mTxt
-		cTime.Text, cMoney.Text = t, mTxt
+		local mTxt = U(1044,1077,1085,1100,1075,1080,58,32) .. formatK(resetCount*5000)
+		local rTxt = U(1056,1077,1089,1077,1090,1099,58,32) .. resetCount .. "/" .. (target > 0 and tostring(target) or "∞")
+		swTime.Text, swMoney.Text, swResets.Text = t, mTxt, rTxt
+		cTime.Text, cMoney.Text, cResets.Text = t, mTxt, rTxt
 		task.wait(1)
 	end
 end)
